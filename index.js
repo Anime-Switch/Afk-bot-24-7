@@ -8,13 +8,13 @@ http.createServer((req, res) => {
 
 const mineflayer = require('mineflayer');
 
-// ===== إعدادات السيرفر (تأكد منها بدقة) =====
+// ===== إعدادات السيرفر =====
 const config = {
   host: 'MM2BXS3.aternos.me',
-  port: 45379,          // ملاحظة: تأكد أن هذا الرقم هو نفسه الموجود في صفحة أترنوس الآن
+  port: 45379,          // ⚠️ تأكد أن هذا هو الرقم الحالي في صفحة أترنوس بعد الريستارت
   username: 'AFK_RIO',
-  version: '1.21.1',    // إذا كان سيرفرك 1.21 فقط، جرب كتابة '1.21'
-  auth: 'offline'       // ضروري جداً
+  version: '1.21.1',    
+  auth: 'offline'       
 };
 
 function createBot() {
@@ -22,16 +22,19 @@ function createBot() {
 
   bot.on('spawn', () => {
     console.log('✅ تم الاتصال بنجاح! البوت الآن داخل السيرفر.');
-    // أمر التسجيل
-    bot.chat('/register ajjubai94 ajjubai94');
-    bot.chat('/login ajjubai94');
-  });
+    
+    // تنفيذ أوامر التسجيل والولوج
+    setTimeout(() => {
+      bot.chat('/register ajjubai94 ajjubai94');
+      bot.chat('/login ajjubai94');
+    }, 3000);
 
-  // لمنع الطرد بسبب الخمول
-  bot.on('login', () => {
+    // الحل الجديد: حركة "النظر" فقط لمنع الطرد (تجنب القفز والمشي)
     setInterval(() => {
-      bot.setControlState('jump', true);
-      setTimeout(() => bot.setControlState('jump', false), 500);
+      const yaw = Math.random() * Math.PI * 2;
+      const pitch = (Math.random() - 0.5) * Math.PI;
+      bot.look(yaw, pitch, false);
+      console.log('🔄 البوت حرك رأسه لتجنب الخمول');
     }, 15000); 
   });
 
@@ -43,7 +46,7 @@ function createBot() {
   bot.on('error', (err) => {
     console.log('⚠️ خطأ في الاتصال:', err.message);
     if(err.message.includes('ECONNREFUSED')) {
-      console.log('--- نصيحة: تأكد أن السيرفر يعمل (Online) وأن البورت صحيح ---');
+      console.log('--- تأكد أن السيرفر يعمل (Online) وأن البورت صحيح في الكود ---');
     }
   });
 
