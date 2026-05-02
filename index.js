@@ -1,86 +1,56 @@
 const http = require('http');
 
-// إنشاء خادم ويب بسيط لإبقاء الاستضافة تعمل مع UptimeRobot
+// خادم الويب لـ UptimeRobot
 http.createServer((req, res) => {
-  res.write("Bot is Online 24/7!");
+  res.write("Bot Status: Active");
   res.end();
 }).listen(8080);
 
 const mineflayer = require('mineflayer');
-const readline = require('readline');
 
-// ===== إعدادات السيرفر الخاصة بك =====
-const SERVER_HOST     = 'MM2BXS3.aternos.me';
-const SERVER_PORT     = 45379;
-const BOT_USERNAME    = 'NoTmeowl1';
-const MC_VERSION      = '1.21.1'; // تم تصحيح الإصدار
-const DEFAULT_COMMAND = '/register ajjubai94 ajjubai94'; // تسجيل الدخول التلقائي
+// ===== إعدادات السيرفر (تأكد منها بدقة) =====
+const config = {
+  host: 'MM2BXS3.aternos.me',
+  port: 45379,          // ملاحظة: تأكد أن هذا الرقم هو نفسه الموجود في صفحة أترنوس الآن
+  username: 'NoTmeowl1',
+  version: '1.21.1',    // إذا كان سيرفرك 1.21 فقط، جرب كتابة '1.21'
+  auth: 'offline'       // ضروري جداً
+};
 
-const ENABLE_RANDOM_CHAT = true; 
-const OWNER_NAME      = 'NoTmeowl';
-// ============================================
-
-function createBot () {
-  const bot = mineflayer.createBot({
-    host: SERVER_HOST,
-    port: SERVER_PORT,
-    username: BOT_USERNAME,
-    version: MC_VERSION,
-    auth: 'offline' // ضروري جداً لسيرفرات أترنوس (Cracked)
-  });
-
-  // التحكم في البوت من خلال Terminal في Replit
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-  });
-  
-  rl.on('line', (input) => {
-    const msg = input.trim();
-    if (msg) bot.chat(msg);
-  });
+function createBot() {
+  const bot = mineflayer.createBot(config);
 
   bot.on('spawn', () => {
-    console.log('✅ تم دخول البوت للسيرفر بنجاح!');
-
-    // تنفيذ أمر التسجيل بعد الدخول بـ 3 ثوانٍ
-    setTimeout(() => {
-      bot.chat(DEFAULT_COMMAND);
-      bot.chat('/login ajjubai94'); // تحسباً إذا كان مسجلاً مسبقاً
-    }, 3000);
-
-    // حركة عشوائية كل 10 ثوانٍ لمنع الطرد (AFK Kick)
-    setInterval(() => {
-      const actions = ['jump', 'forward', 'back', 'left', 'right'];
-      const randomAction = actions[Math.floor(Math.random() * actions.length)];
-      
-      bot.setControlState(randomAction, true);
-      setTimeout(() => bot.setControlState(randomAction, false), 1000);
-    }, 10000);
-
-    // شات عشوائي إذا كان مفعل
-    if (ENABLE_RANDOM_CHAT) {
-      setInterval(() => {
-        const messages = ['I am AFK', 'Still here!', 'Working 24/7', 'NoTmeowl Bot'];
-        bot.chat(messages[Math.floor(Math.random() * messages.length)]);
-      }, 60000); // كل دقيقة
-    }
+    console.log('✅ تم الاتصال بنجاح! البوت الآن داخل السيرفر.');
+    // أمر التسجيل
+    bot.chat('/register ajjubai94 ajjubai94');
+    bot.chat('/login ajjubai94');
   });
 
-  // إدارة الأخطاء وإعادة الاتصال التلقائي
+  // لمنع الطرد بسبب الخمول
+  bot.on('login', () => {
+    setInterval(() => {
+      bot.setControlState('jump', true);
+      setTimeout(() => bot.setControlState('jump', false), 500);
+    }, 15000); 
+  });
+
+  // طباعة سبب المشكلة بالضبط في الـ Console
   bot.on('kicked', (reason) => {
-    console.log('❌ تم طرد البوت. السبب:', reason);
+    console.log('❌ تم الطرد بسبب:', reason);
   });
 
   bot.on('error', (err) => {
-    console.log('⚠️ حدث خطأ في الاتصال:', err.message);
+    console.log('⚠️ خطأ في الاتصال:', err.message);
+    if(err.message.includes('ECONNREFUSED')) {
+      console.log('--- نصيحة: تأكد أن السيرفر يعمل (Online) وأن البورت صحيح ---');
+    }
   });
 
   bot.on('end', () => {
-    console.log('🔄 انقطع الاتصال.. سأحاول العودة بعد 10 ثوانٍ');
+    console.log('🔄 انقطع الاتصال.. محاولة جديدة بعد 10 ثوانٍ');
     setTimeout(createBot, 10000);
   });
 }
 
-// تشغيل البوت لأول مرة
 createBot();
