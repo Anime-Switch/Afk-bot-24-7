@@ -2,8 +2,8 @@ const mineflayer = require('mineflayer');
 const readline = require('readline');
 
 // ===== CONFIG JO TU CHANGE KAR SAKTA HAI =====
-const SERVER_HOST     = 'OreSMPSeason9.aternos.me';
-const SERVER_PORT     = 47257;
+const SERVER_HOST     = 'MM2BXS3.aternos.me';
+const SERVER_PORT     = 45379;
 const BOT_USERNAME    = 'NoTmeowl1';
 const MC_VERSION      = '1.16.5';
 const DEFAULT_COMMAND = '/register ajjubai94';
