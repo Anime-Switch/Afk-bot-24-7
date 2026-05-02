@@ -1,3 +1,9 @@
+const http = require('http');
+http.createServer((req, res) => {
+  res.write("I'm alive");
+  res.end();
+}).listen(8080);
+
 const mineflayer = require('mineflayer');
 const readline = require('readline');
 
