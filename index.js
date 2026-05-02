@@ -11,7 +11,7 @@ const readline = require('readline');
 const SERVER_HOST     = 'MM2BXS3.aternos.me';
 const SERVER_PORT     = 45379;
 const BOT_USERNAME    = 'NoTmeowl1';
-const MC_VERSION      = '1.16.5';
+const MC_VERSION      = '1.21.11';
 const DEFAULT_COMMAND = '/register ajjubai94';
 
 // yahan se random chat ON/OFF karo
