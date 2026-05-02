@@ -12,7 +12,7 @@ const mineflayer = require('mineflayer');
 const config = {
   host: 'MM2BXS3.aternos.me',
   port: 45379,          // ملاحظة: تأكد أن هذا الرقم هو نفسه الموجود في صفحة أترنوس الآن
-  username: 'NoTmeowl1',
+  username: 'AFK_RIO',
   version: '1.21.1',    // إذا كان سيرفرك 1.21 فقط، جرب كتابة '1.21'
   auth: 'offline'       // ضروري جداً
 };
