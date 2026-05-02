@@ -1,22 +1,22 @@
 const http = require('http');
+
+// إنشاء خادم ويب بسيط لإبقاء الاستضافة تعمل مع UptimeRobot
 http.createServer((req, res) => {
-  res.write("I'm alive");
+  res.write("Bot is Online 24/7!");
   res.end();
 }).listen(8080);
 
 const mineflayer = require('mineflayer');
 const readline = require('readline');
 
-// ===== CONFIG JO TU CHANGE KAR SAKTA HAI =====
+// ===== إعدادات السيرفر الخاصة بك =====
 const SERVER_HOST     = 'MM2BXS3.aternos.me';
 const SERVER_PORT     = 45379;
 const BOT_USERNAME    = 'NoTmeowl1';
-const MC_VERSION      = '1.21.11';
-const DEFAULT_COMMAND = '/register ajjubai94';
+const MC_VERSION      = '1.21.1'; // تم تصحيح الإصدار
+const DEFAULT_COMMAND = '/register ajjubai94 ajjubai94'; // تسجيل الدخول التلقائي
 
-// yahan se random chat ON/OFF karo
-const ENABLE_RANDOM_CHAT = true;    // true = on, false = off
-
+const ENABLE_RANDOM_CHAT = true; 
 const OWNER_NAME      = 'NoTmeowl';
 // ============================================
 
@@ -25,138 +25,62 @@ function createBot () {
     host: SERVER_HOST,
     port: SERVER_PORT,
     username: BOT_USERNAME,
-    version: MC_VERSION
+    version: MC_VERSION,
+    auth: 'offline' // ضروري جداً لسيرفرات أترنوس (Cracked)
   });
 
-  // Console se chat
+  // التحكم في البوت من خلال Terminal في Replit
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout
   });
+  
   rl.on('line', (input) => {
     const msg = input.trim();
     if (msg) bot.chat(msg);
-    rl.prompt();
   });
-  rl.prompt();
 
   bot.on('spawn', () => {
-    console.log('Bot is online');
+    console.log('✅ تم دخول البوت للسيرفر بنجاح!');
 
-    // 2 ghante me ek baar auto reconnect
+    // تنفيذ أمر التسجيل بعد الدخول بـ 3 ثوانٍ
+    setTimeout(() => {
+      bot.chat(DEFAULT_COMMAND);
+      bot.chat('/login ajjubai94'); // تحسباً إذا كان مسجلاً مسبقاً
+    }, 3000);
+
+    // حركة عشوائية كل 10 ثوانٍ لمنع الطرد (AFK Kick)
     setInterval(() => {
-      console.log('2 hours passed, restarting bot...');
-      bot.end('Scheduled restart');
-    }, 2 * 60 * 60 * 1000);
+      const actions = ['jump', 'forward', 'back', 'left', 'right'];
+      const randomAction = actions[Math.floor(Math.random() * actions.length)];
+      
+      bot.setControlState(randomAction, true);
+      setTimeout(() => bot.setControlState(randomAction, false), 1000);
+    }, 10000);
 
-    // default command
-    if (DEFAULT_COMMAND && DEFAULT_COMMAND.trim().length > 0) {
-      setTimeout(() => {
-        bot.chat(DEFAULT_COMMAND);
-      }, 1000);
-    }
-
-    // movement
-    bot.on('move', function () {
-      bot.setControlState('jump', true);
-      setTimeout(() => {
-        bot.setControlState('jump', false);
-      }, 1000);
-
-      setTimeout(() => {
-        bot.setControlState('forward', true);
-        setTimeout(() => {
-          bot.setControlState('forward', false);
-        }, 500);
-      }, 1000);
-
-      setTimeout(() => {
-        bot.setControlState('back', true);
-        setTimeout(() => {
-          bot.setControlState('back', false);
-        }, 500);
-      }, 2000);
-
-      setTimeout(() => {
-        bot.setControlState('right', true);
-        setTimeout(() => {
-          bot.setControlState('right', false);
-        }, 2000);
-      }, 500);
-
-      setTimeout(() => {
-        bot.setControlState('left', true);
-        setTimeout(() => {
-          bot.setControlState('left', false);
-        }, 2000);
-      }, 500);
-    });
-
-    // auto random chat (switch se controlled)
+    // شات عشوائي إذا كان مفعل
     if (ENABLE_RANDOM_CHAT) {
       setInterval(() => {
-        const chats = ['mining afk', 'brb', 'lag', 'gf', 'wp'];
-        const msg = chats[Math.floor(Math.random() * chats.length)];
-        bot.chat(msg);
-      }, 30000 + Math.random() * 60000);
-    }
-
-    // === Break + Place block loop (every 10 minutes) ===
-    setInterval(async () => {
-      try {
-        bot.clearControlStates(); // ruk ja thodi der
-
-        const basePos = bot.entity.position.offset(0, -1, 0);
-        const block = bot.blockAt(basePos);
-        if (!block || block.type === 0) {
-          console.log('No block under bot');
-          return;
-        }
-
-        console.log('Trying to break:', block.name);
-        await bot.dig(block); // break karega
-
-        // block.name -> item.name mapping (grass_block -> dirt, etc.)
-        let targetItemName = block.name;
-        if (block.name === 'grass_block') targetItemName = 'dirt';
-
-        const item = bot.inventory.items().find(i => i.name === targetItemName);
-        if (!item) {
-          console.log('Item not in inventory (mapped):', targetItemName);
-          return;
-        }
-
-        await bot.equip(item, 'hand');
-
-        const ref = bot.blockAt(basePos.offset(0, -1, 0));
-        if (!ref) {
-          console.log('No ref block to place on');
-          return;
-        }
-
-        await bot.placeBlock(ref, { x: 0, y: 1, z: 0 });
-        console.log('Placed back item:', targetItemName);
-      } catch (e) {
-        console.log('Place loop error:', e.message);
-      }
-    }, 10 * 60 * 1000); // 10 minutes
-  });
-
-  // Game se control: OWNER_NAME likhe "!bot msg"
-  bot.on('chat', (username, message) => {
-    if (username === OWNER_NAME && message.startsWith('!bot ')) {
-      const msg = message.substring(5).trim();
-      if (msg.length > 0) bot.chat(msg);
+        const messages = ['I am AFK', 'Still here!', 'Working 24/7', 'NoTmeowl Bot'];
+        bot.chat(messages[Math.floor(Math.random() * messages.length)]);
+      }, 60000); // كل دقيقة
     }
   });
 
-  // Logs + auto rejoin
-  bot.on('kicked', console.log);
-  bot.on('error', console.log);
+  // إدارة الأخطاء وإعادة الاتصال التلقائي
+  bot.on('kicked', (reason) => {
+    console.log('❌ تم طرد البوت. السبب:', reason);
+  });
+
+  bot.on('error', (err) => {
+    console.log('⚠️ حدث خطأ في الاتصال:', err.message);
+  });
+
   bot.on('end', () => {
-    console.log('Bot disconnected, reconnecting in 5s...');
-    setTimeout(createBot, 5000);
+    console.log('🔄 انقطع الاتصال.. سأحاول العودة بعد 10 ثوانٍ');
+    setTimeout(createBot, 10000);
   });
 }
 
+// تشغيل البوت لأول مرة
 createBot();
