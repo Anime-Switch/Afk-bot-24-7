@@ -10,7 +10,7 @@ http.createServer((req, res) => {
 const config = {
     host: "MM2BXS3.aternos.me",
     port: 45379,
-    username: "AFKBot_04",
+    username: "AFK_RIO_Bot",
     password: "mmmnnn"
 };
 
