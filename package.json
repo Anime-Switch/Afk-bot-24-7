@@ -1,12 +1,16 @@
 {
-  "name": "afk-bot",
-  "version": "1.0.0",
-  "description": "Minecraft AFK Bot",
+  "name": "minecraft-afk-bot",
+  "version": "2.0.0",
+  "description": "AFK Bot for Minecraft - Clean Version",
   "main": "bot.js",
   "scripts": {
-    "start": "node bot.js"
+    "start": "node bot.js",
+    "dev": "nodemon bot.js"
   },
   "dependencies": {
-    "mineflayer": "^4.20.0"
+    "mineflayer": "^4.23.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.0"
   }
 }
