@@ -1,54 +1,42 @@
 const mineflayer = require("mineflayer");
 const http = require("http");
 
-// 1. إنشاء خادم ويب وهمي لإرضاء Render ومنع الـ Timeout
+// خادم ويب وهمي لمنع توقف الخدمة في Render
 http.createServer((req, res) => {
-    res.write("Bot is running!");
+    res.write("Bot is Live!");
     res.end();
-}).listen(10000); // Render سيتعرف على هذا المنفذ
+}).listen(process.env.PORT || 10000);
 
 const config = {
-    host: "MM2BXS3.aternos.me", // استخدم العنوان النصي دائماً
-    port: 45379,               // تأكد من تحديث هذا الرقم من أترنوس حالاً
+    host: "MM2BXS3.aternos.me",
+    port: 45379,
     username: "AFKBot_04",
     password: "mmmnnn"
 };
 
 function createBot() {
-    console.log("[bot] Attempting to connect to " + config.host);
-    
+    console.log("[bot] Connecting to " + config.host);
     const bot = mineflayer.createBot({
         host: config.host,
         port: config.port,
         username: config.username,
-        hideErrors: true
-    });
-
-    bot.on("login", () => {
-        console.log("✅ Connected successfully!");
+        version: false
     });
 
     bot.on("spawn", () => {
-        console.log("Joined world. Sending Auth...");
+        console.log("✅ Joined Successfully!");
         setTimeout(() => {
             bot.chat(`/register ${config.password} ${config.password}`);
-            setTimeout(() => bot.chat(`/login ${config.password}`), 1500);
+            setTimeout(() => bot.chat(`/login ${config.password}`), 1000);
         }, 3000);
     });
 
-    bot.on("end", (reason) => {
-        console.log("Disconnected. Reconnecting in 15s...");
+    bot.on("end", () => {
+        console.log("Disconnected. Rejoining in 15s...");
         setTimeout(createBot, 15000);
     });
 
-    bot.on("error", (err) => {
-        console.log("⚠️ Connection Error: " + err.message);
-    });
+    bot.on("error", (err) => console.log("Error: " + err.message));
 }
 
 createBot();
-
-// حلقة رسائل لمنع Render من إيقاف الخدمة
-setInterval(() => {
-    console.log("Keep-alive: " + new Date().toISOString());
-}, 20000);
