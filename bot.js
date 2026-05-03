@@ -1,68 +1,81 @@
 const mineflayer = require("mineflayer");
 const http = require("http");
 
-// 1. خادم ويب مصغر لإبقاء Railway نشطاً (لأن Railway يطلب Port حي)
+// 1. خادم الويب لـ Railway
 http.createServer((req, res) => {
-    res.write("AFK Bot is Online - Sneaking & Jumping");
+    res.write("AFK Bot: Infinite Walk + Jump + Attack Mode");
     res.end();
 }).listen(process.env.PORT || 3000);
 
-// 2. بيانات السيرفر (تأكد من الـ Port دائماً من أترنوس)
 const config = {
     host: "MM2BXS3.aternos.me",
-    port: 45379, // غيره إذا تغير الرقم في أترنوس
+    port: 45379,
     username: "AFKBot_04",
     password: "mmmnnn"
 };
 
+const walkTime = 22000; // مدة قطع 100 بلوكة
+
 function createBot() {
-    console.log(`[Railway] Connecting to server...`);
-    
     const bot = mineflayer.createBot({
         host: config.host,
         port: config.port,
         username: config.username,
-        version: false, // يكتشف النسخة تلقائياً
+        version: "1.21.1", 
         checkTimeoutInterval: 60000 
     });
 
-    // 3. عند الدخول (التسجيل والحركة)
     bot.on("spawn", () => {
-        console.log("✅ Joined! Starting Sneak & Jump system...");
+        console.log("✅ دخل البوت! يبدأ الآن نظام الهجوم والمشي اللانهائي...");
         
-        // أوامر الدخول التلقائي (AuthMe)
         setTimeout(() => {
             bot.chat(`/register ${config.password} ${config.password}`);
             setTimeout(() => bot.chat(`/login ${config.password}`), 1500);
+            
+            // البدء بالأكشن بعد تسجيل الدخول
+            setTimeout(() => startInfiniteAction(bot), 5000);
         }, 3000);
-        
-        // 4. الحركة السحرية (يشفت وينط) لمنع الحظر
-        setInterval(() => {
-            if (bot.entity) {
-                // يبدأ يشفت
-                bot.setControlState('sneak', true);
-                
-                setTimeout(() => {
-                    // ينط وهو مشفت
-                    bot.setControlState('jump', true);
-                    
-                    setTimeout(() => {
-                        bot.setControlState('jump', false);
-                        // يفك التشفيت
-                        bot.setControlState('sneak', false);
-                        
-                        // يغير زاوية وجهه بشكل عشوائي (عشان الحماية ما تصيده)
-                        const yaw = bot.entity.yaw + (Math.random() * 0.6 - 0.3);
-                        bot.look(yaw, 0);
-                    }, 500); 
-                }, 300);
-            }
-        }, 10000); // يكرر الحركة كل 10 ثوانٍ
     });
 
-    // 5. إعادة الاتصال التلقائي إذا طُرد أو فصل السيرفر
+    async function startInfiniteAction(bot) {
+        while (true) {
+            for (let i = 0; i < 4; i++) {
+                if (!bot.entity) return;
+
+                bot.setControlState('forward', true);
+                console.log(`🏃 الضلع ${i + 1}: مشي + ضرب + قفز عشوائي...`);
+
+                // --- نظام الضرب والقفز المستمر ---
+                const actionTimer = setInterval(() => {
+                    // يضرب (Left Click)
+                    bot.swingArm('left'); 
+                    
+                    // قفز عشوائي (احتمال 50%)
+                    if (Math.random() > 0.5) {
+                        bot.setControlState('jump', true);
+                        setTimeout(() => bot.setControlState('jump', false), 400);
+                    }
+                }, 1000); // يكرر الضرب والنط كل ثانية واحدة
+
+                await new Promise(resolve => setTimeout(resolve, walkTime));
+
+                // توقف مؤقت للالتفاف
+                clearInterval(actionTimer);
+                bot.setControlState('forward', false);
+                bot.setControlState('jump', false);
+                
+                // الالتفاف لليمين
+                const yaw = bot.entity.yaw + (Math.PI / 2);
+                await bot.look(yaw, 0, true);
+                console.log("🔄 التفات لليمين...");
+                
+                await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+        }
+    }
+
     bot.on("end", (reason) => {
-        console.log(`Disconnected: ${reason}. Reconnecting in 15s...`);
+        console.log(`Disconnected: ${reason}. Restarting in 15s...`);
         setTimeout(createBot, 15000);
     });
 
