@@ -2,9 +2,11 @@ const mineflayer = require("mineflayer");
 const http = require("http");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-// --- 1. إعداد ذكاء Gemini ---
-// الأفضل نستخدم process.env عشان يقرأ المفتاح من إعدادات Railway اللي سويتها بالصورة
-const apiKey = process.env.GEMINI_KEY || "AIzaSyDBObUJ2dV54xp-Vo8IXLutIrfqAwBftOA";
+// إعداد Gemini - الاعتماد الكلي على المتغير السري في Railway
+const apiKey = process.env.GEMINI_KEY;
+if (!apiKey) {
+    console.error("❌ تحذير: مفتاح GEMINI_KEY غير موجود في إعدادات Railway!");
+}
 const genAI = new GoogleGenerativeAI(apiKey);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
