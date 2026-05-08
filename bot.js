@@ -3,13 +3,14 @@ const http = require("http");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 // --- 1. إعداد ذكاء Gemini ---
-// استبدل KEY_هنا بمفتاحك الخاص من Google AI Studio
-const genAI = new GoogleGenerativeAI("AIzaSyDBObUJ2dV54xp-Vo8IXLutIrfqAwBftOA");
+// الأفضل نستخدم process.env عشان يقرأ المفتاح من إعدادات Railway اللي سويتها بالصورة
+const apiKey = process.env.GEMINI_KEY || "AIzaSyDBObUJ2dV54xp-Vo8IXLutIrfqAwBftOA";
+const genAI = new GoogleGenerativeAI(apiKey);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 // خادم الويب لـ Railway
 http.createServer((req, res) => {
-    res.write("AFK Bot: Gemini AI + Infinite Action Mode");
+    res.write("AFK Bot: Gemini AI Active");
     res.end();
 }).listen(process.env.PORT || 3000);
 
@@ -22,7 +23,6 @@ const config = {
 
 const walkTime = 22000; 
 
-// وظيفة الحصول على رد من Gemini
 async function askGemini(prompt) {
     try {
         const result = await model.generateContent(prompt);
@@ -30,7 +30,8 @@ async function askGemini(prompt) {
         return response.text();
     } catch (error) {
         console.error("Gemini Error:", error);
-        return "عذراً، نظام الذكاء الاصطناعي مشغول حالياً.";
+        // إذا استمرت رسالة مشغول، جرب تتأكد من الـ Logs في Railway شو الخطأ بالضبط
+        return "عذراً، نظام الذكاء الاصطناعي واجه خطأ فني.";
     }
 }
 
@@ -45,25 +46,24 @@ function createBot() {
 
     bot.on("spawn", () => {
         console.log("✅ دخل البوت! نظام الـ AI والأكشن نشط...");
-        
         setTimeout(() => {
             bot.chat(`/register ${config.password} ${config.password}`);
             setTimeout(() => bot.chat(`/login ${config.password}`), 1500);
-            
             setTimeout(() => startInfiniteAction(bot), 5000);
         }, 3000);
     });
 
-    // --- نظام الرد الذكي عند وجود كلمة Ai ---
+    // --- نظام الرد الذكي المطور (حل مشكلة aiwn) ---
     bot.on('chat', async (username, message) => {
         if (username === bot.username) return;
 
-        // التحقق من وجود كلمة Ai في الجملة
-        if (message.toLowerCase().includes('ai')) {
+        // التعديل هنا: يبحث عن كلمة ai ككلمة مستقلة فقط
+        // \bai\b تضمن أنه لن يرد على aiwn أو main
+        const aiRegex = /\bai\b/i; 
+
+        if (aiRegex.test(message)) {
             console.log(`[سؤال من ${username}]: ${message}`);
             const reply = await askGemini(message);
-            
-            // الرد في الشات (أول 200 حرف لتجنب قوانين ماينكرافت)
             bot.chat(reply.substring(0, 200));
         }
     });
@@ -72,22 +72,19 @@ function createBot() {
         while (true) {
             for (let i = 0; i < 4; i++) {
                 if (!bot.entity) return;
-
                 bot.setControlState('forward', true);
                 const actionTimer = setInterval(() => {
+                    if (!bot.entity) return;
                     bot.swingArm('left'); 
                     if (Math.random() > 0.5) {
                         bot.setControlState('jump', true);
                         setTimeout(() => bot.setControlState('jump', false), 400);
                     }
                 }, 1000);
-
                 await new Promise(resolve => setTimeout(resolve, walkTime));
-
                 clearInterval(actionTimer);
                 bot.setControlState('forward', false);
                 bot.setControlState('jump', false);
-                
                 const yaw = bot.entity.yaw + (Math.PI / 2);
                 await bot.look(yaw, 0, true);
                 await new Promise(resolve => setTimeout(resolve, 2000));
@@ -104,4 +101,3 @@ function createBot() {
 }
 
 createBot();
-           
