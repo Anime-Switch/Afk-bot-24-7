@@ -1,28 +1,35 @@
 const mineflayer = require("mineflayer");
 const Groq = require("groq-sdk");
+const http = require("http");
 
-// إعداد المفتاح من Railway
 const groq = new Groq({ apiKey: process.env.GROQ_KEY });
+
+http.createServer((req, res) => {
+    res.write("Dragon SMP: Admin System & Advanced Movement Active");
+    res.end();
+}).listen(process.env.PORT || 3000);
 
 const config = {
     host: "MM2BXS3.aternos.me",
     port: 45379,
     username: "AFK_RIO_Bot",
-    password: "mmmnnn"
+    password: "mmmnnn",
+    owner: "OMA_gamer8309" 
 };
+
+let moveActive = true; 
 
 async function askAI(prompt) {
     try {
         const chatCompletion = await groq.chat.completions.create({
-            messages: [{ role: "user", content: prompt }],
+            messages: [
+                { role: "system", content: "أنت حارس Dragon SMP. اسمك AFK_RIO_Bot. خبير في بلوقنات السيرفر. ردودك قصيرة وبالعربي." },
+                { role: "user", content: prompt }
+            ],
             model: "llama-3.3-70b-versatile", 
         });
         return chatCompletion.choices[0]?.message?.content || "";
-    } catch (error) {
-        console.error("Groq Error:", error);
-        // إذا طلع خطأ في الموديل، بيعطيك تنبيه بسيط في اللعبة
-        return "⚠️ عذراً، الذكاء الاصطناعي مشغول حالياً.";
-    }
+    } catch (error) { return "⚠️ مشغول!"; }
 }
 
 function createBot() {
@@ -34,34 +41,81 @@ function createBot() {
     });
 
     bot.on("spawn", () => {
-        console.log("✅ البوت اشتغل بنظام Groq المجاني!");
-        // تسجيل الدخول التلقائي
+        console.log("✅ البوت نشط بنظام الحركة المطور!");
         setTimeout(() => {
             bot.chat(`/login ${config.password}`);
-        }, 2000);
+            setTimeout(() => { if(moveActive) startAdvancedMovement(bot); }, 5000);
+        }, 3000);
     });
 
     bot.on('chat', async (username, message) => {
         if (username === bot.username) return;
 
-        // نظام التحقق من كلمة ai
+        // --- أوامر الإدارة ---
+        if (username === config.owner) {
+            if (message === "!stop") {
+                moveActive = false;
+                bot.clearControlStates();
+                bot.chat("🚫 أبشر، وقفت الحركة والضرب والنط.");
+                return;
+            }
+            if (message === "!start") {
+                if(!moveActive) {
+                    moveActive = true;
+                    bot.chat("🏃 تم تفعيل نظام الـ 10 بلوكات والضرب.");
+                    startAdvancedMovement(bot);
+                }
+                return;
+            }
+        }
+
+        // --- الذكاء الاصطناعي ---
         const aiRegex = /\bai\b/i; 
         if (aiRegex.test(message)) {
-            const cleanMessage = message.replace(aiRegex, '').trim();
-            const reply = await askAI(cleanMessage || "مرحباً");
-            
-            // تقسيم الرد إذا كان طويل جداً عشان ماينكرافت ما ترفضه
+            const reply = await askAI(message.replace(aiRegex, ''));
             bot.chat(reply.substring(0, 200));
         }
     });
 
-    // إعادة الاتصال التلقائي في حال الفصل
-    bot.on("end", () => {
-        console.log("فصل البوت.. جاري إعادة الاتصال بعد 15 ثانية");
-        setTimeout(createBot, 15000);
-    });
+    // --- نظام الحركة المطور (10 بلوكات ذهاب وإياب + ضرب ونط) ---
+    async function startAdvancedMovement(bot) {
+        while (moveActive) {
+            try {
+                // المرحلة 1: الذهاب 10 بلوكات (تقريباً 4 ثواني مشي)
+                await performMove(bot, 'forward', 4000);
+                
+                if (!moveActive) break;
 
-    bot.on("error", (err) => console.log("خطأ في البوت: ", err));
+                // الدوران للخلف (180 درجة)
+                const yaw = bot.entity.yaw + Math.PI;
+                await bot.look(yaw, 0, true);
+
+                // المرحلة 2: العودة 10 بلوكات
+                await performMove(bot, 'forward', 4000);
+
+                await new Promise(r => setTimeout(r, 1000));
+            } catch (err) { break; }
+        }
+    }
+
+    // وظيفة مساعدة للمشي مع الضرب والنط
+    async function performMove(bot, control, duration) {
+        const startTime = Date.now();
+        bot.setControlState(control, true);
+
+        while (Date.now() - startTime < duration && moveActive) {
+            bot.swingArm('left'); // يضرب
+            if (Math.random() > 0.7) { // ينط بشكل عشوائي
+                bot.setControlState('jump', true);
+                await new Promise(r => setTimeout(r, 200));
+                bot.setControlState('jump', false);
+            }
+            await new Promise(r => setTimeout(r, 500));
+        }
+        bot.setControlState(control, false);
+    }
+
+    bot.on("end", () => setTimeout(createBot, 15000));
 }
 
 createBot();
