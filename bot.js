@@ -1,9 +1,15 @@
 const mineflayer = require("mineflayer");
 const http = require("http");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-// 1. خادم الويب لـ Railway
+// --- 1. إعداد ذكاء Gemini ---
+// استبدل KEY_هنا بمفتاحك الخاص من Google AI Studio
+const genAI = new GoogleGenerativeAI("AIzaSyDBObUJ2dV54xp-Vo8IXLutIrfqAwBftOA");
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+// خادم الويب لـ Railway
 http.createServer((req, res) => {
-    res.write("AFK Bot: Infinite Walk + Jump + Attack Mode");
+    res.write("AFK Bot: Gemini AI + Infinite Action Mode");
     res.end();
 }).listen(process.env.PORT || 3000);
 
@@ -14,7 +20,19 @@ const config = {
     password: "mmmnnn"
 };
 
-const walkTime = 22000; // مدة قطع 100 بلوكة
+const walkTime = 22000; 
+
+// وظيفة الحصول على رد من Gemini
+async function askGemini(prompt) {
+    try {
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        return response.text();
+    } catch (error) {
+        console.error("Gemini Error:", error);
+        return "عذراً، نظام الذكاء الاصطناعي مشغول حالياً.";
+    }
+}
 
 function createBot() {
     const bot = mineflayer.createBot({
@@ -26,15 +44,28 @@ function createBot() {
     });
 
     bot.on("spawn", () => {
-        console.log("✅ دخل البوت! يبدأ الآن نظام الهجوم والمشي اللانهائي...");
+        console.log("✅ دخل البوت! نظام الـ AI والأكشن نشط...");
         
         setTimeout(() => {
             bot.chat(`/register ${config.password} ${config.password}`);
             setTimeout(() => bot.chat(`/login ${config.password}`), 1500);
             
-            // البدء بالأكشن بعد تسجيل الدخول
             setTimeout(() => startInfiniteAction(bot), 5000);
         }, 3000);
+    });
+
+    // --- نظام الرد الذكي عند وجود كلمة Ai ---
+    bot.on('chat', async (username, message) => {
+        if (username === bot.username) return;
+
+        // التحقق من وجود كلمة Ai في الجملة
+        if (message.toLowerCase().includes('ai')) {
+            console.log(`[سؤال من ${username}]: ${message}`);
+            const reply = await askGemini(message);
+            
+            // الرد في الشات (أول 200 حرف لتجنب قوانين ماينكرافت)
+            bot.chat(reply.substring(0, 200));
+        }
     });
 
     async function startInfiniteAction(bot) {
@@ -43,32 +74,22 @@ function createBot() {
                 if (!bot.entity) return;
 
                 bot.setControlState('forward', true);
-                console.log(`🏃 الضلع ${i + 1}: مشي + ضرب + قفز عشوائي...`);
-
-                // --- نظام الضرب والقفز المستمر ---
                 const actionTimer = setInterval(() => {
-                    // يضرب (Left Click)
                     bot.swingArm('left'); 
-                    
-                    // قفز عشوائي (احتمال 50%)
                     if (Math.random() > 0.5) {
                         bot.setControlState('jump', true);
                         setTimeout(() => bot.setControlState('jump', false), 400);
                     }
-                }, 1000); // يكرر الضرب والنط كل ثانية واحدة
+                }, 1000);
 
                 await new Promise(resolve => setTimeout(resolve, walkTime));
 
-                // توقف مؤقت للالتفاف
                 clearInterval(actionTimer);
                 bot.setControlState('forward', false);
                 bot.setControlState('jump', false);
                 
-                // الالتفاف لليمين
                 const yaw = bot.entity.yaw + (Math.PI / 2);
                 await bot.look(yaw, 0, true);
-                console.log("🔄 التفات لليمين...");
-                
                 await new Promise(resolve => setTimeout(resolve, 2000));
             }
         }
@@ -83,3 +104,4 @@ function createBot() {
 }
 
 createBot();
+           
