@@ -1,15 +1,15 @@
 const mineflayer = require("mineflayer");
 const http = require("http");
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+const OpenAI = require("openai");
 
-// إعداد Gemini - الاعتماد الكلي على المتغير السري في Railway
-const apiKey = process.env.GEMINI_KEY;
-const genAI = new GoogleGenerativeAI(apiKey);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+// --- 1. إعداد OpenAI ---
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_KEY,
+});
 
-// خادم الويب لـ Railway
+// خادم الويب لـ Railway (للحفاظ على استمرار الخدمة)
 http.createServer((req, res) => {
-    res.write("AFK Bot: Gemini AI Active");
+    res.write("Dragon SMP Bot: ChatGPT Active");
     res.end();
 }).listen(process.env.PORT || 3000);
 
@@ -22,18 +22,20 @@ const config = {
 
 const walkTime = 22000; 
 
-// --- وظيفة الرد المعدلة لكشف الخطأ ---
-async function askGemini(prompt) {
+// وظيفة الحصول على رد من ChatGPT
+async function askAI(prompt) {
     try {
-        if (!apiKey) return "⚠️ خطأ: مفتاح GEMINI_KEY غير مضاف في Railway!";
+        if (!process.env.OPENAI_KEY) return "⚠️ خطأ: مفتاح OPENAI_KEY مفقود!";
         
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        return response.text();
+        const response = await openai.chat.completions.create({
+            model: "gpt-3.5-turbo",
+            messages: [{ role: "user", content: prompt }],
+            max_tokens: 150,
+        });
+        return response.choices[0].message.content;
     } catch (error) {
-        console.error("Gemini Error:", error);
-        // التعديل هنا ليعطيك السبب الحقيقي في شات ماينكرافت
-        return "⚠️ خطأ: " + (error.message ? error.message.substring(0, 50) : "مشكلة في الاتصال");
+        console.error("AI Error:", error);
+        return "⚠️ خطأ: " + (error.message ? error.message.substring(0, 50) : "فشل الاتصال بـ OpenAI");
     }
 }
 
@@ -47,7 +49,7 @@ function createBot() {
     });
 
     bot.on("spawn", () => {
-        console.log("✅ دخل البوت! نظام الـ AI والأكشن نشط...");
+        console.log("✅ دخل البوت! نظام ChatGPT نشط...");
         setTimeout(() => {
             bot.chat(`/register ${config.password} ${config.password}`);
             setTimeout(() => bot.chat(`/login ${config.password}`), 1500);
@@ -55,15 +57,18 @@ function createBot() {
         }, 3000);
     });
 
+    // --- نظام الرد الذكي المطور (كلمة ai فقط) ---
     bot.on('chat', async (username, message) => {
         if (username === bot.username) return;
 
+        // يبحث عن كلمة ai ككلمة مستقلة (تتجاهل aiwn)
         const aiRegex = /\bai\b/i; 
 
         if (aiRegex.test(message)) {
-            console.log(`[سؤال من ${username}]: ${message}`);
-            const reply = await askGemini(message);
-            // تقصير الرد ليتناسب مع شات ماينكرافت
+            const cleanMessage = message.replace(aiRegex, '').trim();
+            console.log(`[سؤال من ${username}]: ${cleanMessage}`);
+            
+            const reply = await askAI(cleanMessage || "مرحباً");
             bot.chat(reply.substring(0, 200));
         }
     });
@@ -93,7 +98,7 @@ function createBot() {
     }
 
     bot.on("end", (reason) => {
-        console.log(`Disconnected: ${reason}. Restarting in 15s...`);
+        console.log(`Disconnected: ${reason}. Restarting...`);
         setTimeout(createBot, 15000);
     });
 
