@@ -4,9 +4,6 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 // إعداد Gemini - الاعتماد الكلي على المتغير السري في Railway
 const apiKey = process.env.GEMINI_KEY;
-if (!apiKey) {
-    console.error("❌ تحذير: مفتاح GEMINI_KEY غير موجود في إعدادات Railway!");
-}
 const genAI = new GoogleGenerativeAI(apiKey);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
@@ -25,15 +22,18 @@ const config = {
 
 const walkTime = 22000; 
 
+// --- وظيفة الرد المعدلة لكشف الخطأ ---
 async function askGemini(prompt) {
     try {
+        if (!apiKey) return "⚠️ خطأ: مفتاح GEMINI_KEY غير مضاف في Railway!";
+        
         const result = await model.generateContent(prompt);
         const response = await result.response;
         return response.text();
     } catch (error) {
         console.error("Gemini Error:", error);
-        // إذا استمرت رسالة مشغول، جرب تتأكد من الـ Logs في Railway شو الخطأ بالضبط
-        return "عذراً، نظام الذكاء الاصطناعي واجه خطأ فني.";
+        // التعديل هنا ليعطيك السبب الحقيقي في شات ماينكرافت
+        return "⚠️ خطأ: " + (error.message ? error.message.substring(0, 50) : "مشكلة في الاتصال");
     }
 }
 
@@ -55,17 +55,15 @@ function createBot() {
         }, 3000);
     });
 
-    // --- نظام الرد الذكي المطور (حل مشكلة aiwn) ---
     bot.on('chat', async (username, message) => {
         if (username === bot.username) return;
 
-        // التعديل هنا: يبحث عن كلمة ai ككلمة مستقلة فقط
-        // \bai\b تضمن أنه لن يرد على aiwn أو main
         const aiRegex = /\bai\b/i; 
 
         if (aiRegex.test(message)) {
             console.log(`[سؤال من ${username}]: ${message}`);
             const reply = await askGemini(message);
+            // تقصير الرد ليتناسب مع شات ماينكرافت
             bot.chat(reply.substring(0, 200));
         }
     });
