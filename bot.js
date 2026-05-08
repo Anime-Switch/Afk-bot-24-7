@@ -1,6 +1,7 @@
 const mineflayer = require("mineflayer");
 const Groq = require("groq-sdk");
 
+// إعداد المفتاح من Railway
 const groq = new Groq({ apiKey: process.env.GROQ_KEY });
 
 const config = {
@@ -14,11 +15,13 @@ async function askAI(prompt) {
     try {
         const chatCompletion = await groq.chat.completions.create({
             messages: [{ role: "user", content: prompt }],
-            model: "llama3-8b-8192", // موديل قوي وسريع جداً
+            model: "llama-3.3-70b-versatile", 
         });
         return chatCompletion.choices[0]?.message?.content || "";
     } catch (error) {
-        return "⚠️ خطأ: " + error.message.substring(0, 50);
+        console.error("Groq Error:", error);
+        // إذا طلع خطأ في الموديل، بيعطيك تنبيه بسيط في اللعبة
+        return "⚠️ عذراً، الذكاء الاصطناعي مشغول حالياً.";
     }
 }
 
@@ -32,19 +35,33 @@ function createBot() {
 
     bot.on("spawn", () => {
         console.log("✅ البوت اشتغل بنظام Groq المجاني!");
-        bot.chat(`/login ${config.password}`);
+        // تسجيل الدخول التلقائي
+        setTimeout(() => {
+            bot.chat(`/login ${config.password}`);
+        }, 2000);
     });
 
     bot.on('chat', async (username, message) => {
         if (username === bot.username) return;
+
+        // نظام التحقق من كلمة ai
         const aiRegex = /\bai\b/i; 
         if (aiRegex.test(message)) {
-            const reply = await askAI(message.replace(aiRegex, ''));
+            const cleanMessage = message.replace(aiRegex, '').trim();
+            const reply = await askAI(cleanMessage || "مرحباً");
+            
+            // تقسيم الرد إذا كان طويل جداً عشان ماينكرافت ما ترفضه
             bot.chat(reply.substring(0, 200));
         }
     });
 
-    bot.on("end", () => setTimeout(createBot, 15000));
+    // إعادة الاتصال التلقائي في حال الفصل
+    bot.on("end", () => {
+        console.log("فصل البوت.. جاري إعادة الاتصال بعد 15 ثانية");
+        setTimeout(createBot, 15000);
+    });
+
+    bot.on("error", (err) => console.log("خطأ في البوت: ", err));
 }
 
 createBot();
