@@ -4,10 +4,10 @@ const OpenAI = require("openai");
 
 // --- 1. إعداد OpenAI ---
 const openai = new OpenAI({
-    apiKey: process.env.OPENAI_KEY,
+    apiKey: process.env.OPENAI_KEY, // تأكد أن الاسم في Railway هو OPENAI_KEY
 });
 
-// خادم الويب لـ Railway (للحفاظ على استمرار الخدمة)
+// خادم الويب لـ Railway للحفاظ على استمرارية الخدمة
 http.createServer((req, res) => {
     res.write("Dragon SMP Bot: ChatGPT Active");
     res.end();
@@ -25,7 +25,7 @@ const walkTime = 22000;
 // وظيفة الحصول على رد من ChatGPT
 async function askAI(prompt) {
     try {
-        if (!process.env.OPENAI_KEY) return "⚠️ خطأ: مفتاح OPENAI_KEY مفقود!";
+        if (!process.env.OPENAI_KEY) return "⚠️ خطأ: مفتاح OPENAI_KEY مفقود في إعدادات Railway!";
         
         const response = await openai.chat.completions.create({
             model: "gpt-3.5-turbo",
@@ -57,7 +57,7 @@ function createBot() {
         }, 3000);
     });
 
-    // --- نظام الرد الذكي المطور (كلمة ai فقط) ---
+    // --- نظام الرد الذكي (كلمة ai فقط) ---
     bot.on('chat', async (username, message) => {
         if (username === bot.username) return;
 
@@ -65,10 +65,12 @@ function createBot() {
         const aiRegex = /\bai\b/i; 
 
         if (aiRegex.test(message)) {
+            // إزالة كلمة ai من الرسالة لإرسال السؤال الصافي للذكاء الاصطناعي
             const cleanMessage = message.replace(aiRegex, '').trim();
             console.log(`[سؤال من ${username}]: ${cleanMessage}`);
             
             const reply = await askAI(cleanMessage || "مرحباً");
+            // إرسال الرد للشات (أول 200 حرف لتفادي حظر ماينكرافت للرسائل الطويلة)
             bot.chat(reply.substring(0, 200));
         }
     });
@@ -98,7 +100,7 @@ function createBot() {
     }
 
     bot.on("end", (reason) => {
-        console.log(`Disconnected: ${reason}. Restarting...`);
+        console.log(`Disconnected: ${reason}. Restarting in 15s...`);
         setTimeout(createBot, 15000);
     });
 
