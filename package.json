@@ -4,14 +4,10 @@
   "description": "AFK Bot for Minecraft - Clean Version",
   "main": "bot.js",
   "scripts": {
-    "start": "node bot.js",
-    "dev": "nodemon bot.js"
+    "start": "node bot.js"
   },
   "dependencies": {
     "mineflayer": "^4.23.0",
     "@google/generative-ai": "^0.11.0"
-  },
-  "devDependencies": {
-    "nodemon": "^3.0.0"
   }
 }
