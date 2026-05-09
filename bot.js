@@ -2,10 +2,12 @@ const mineflayer = require("mineflayer");
 const Groq = require("groq-sdk");
 const http = require("http");
 
+// إعداد مفتاح API الخاص بـ Groq
 const groq = new Groq({ apiKey: process.env.GROQ_KEY });
 
+// إنشاء سيرفر ويب بسيط لبقاء البوت نشطاً على Railway
 http.createServer((req, res) => {
-    res.write("Dragon SMP: Gentle Guard Active");
+    res.write("Dragon SMP: Bot Status Online[span_0](start_span)[span_0](end_span)");
     res.end();
 }).listen(process.env.PORT || 3000);
 
@@ -14,54 +16,9 @@ const config = {
     port: 45379,
     username: "RIO_BOT_AFK",
     password: "mmmnnn",
-    ranks: {
-        owners: ["oma_gamer8309", "x4tra", ".oma_gamer8309"], //
-        admins: ["Museb_RG"] 
-    }
+    owners: ["oma_gamer8309", "x4tra", ".oma_gamer8309"], // قائمة الأونرية[span_1](start_span)[span_1](end_span)
+    admins: ["Museb_RG"]
 };
-
-// نظام فحص الإساءة والاختراق
-function checkMessageInfection(message) {
-    const msg = message.toLowerCase();
-    
-    // كلمات تدل على الغلط أو السب
-    const toxicWords = ["كلب", "حمار", "غبي", "تفو", "يلعن", "يا ورع", "كول خرا", "حيوان"];
-    
-    // كلمات تدل على محاولة اختراق
-    const hackingWords = ["/", "tp", "op", "admin", "rank", "creative", "gm1", "صلاحيات", "deop", "ban", "kick"];
-
-    const isToxic = toxicWords.some(word => msg.includes(word));
-    const isHacking = hackingWords.some(word => msg.includes(word));
-
-    return { isToxic, isHacking };
-}
-
-function getRank(username) {
-    if (config.ranks.owners.includes(username)) return "OWNER";
-    if (config.ranks.admins.includes(username)) return "ADMIN";
-    return "PLAYER";
-}
-
-async function askAI(prompt, isToxic) {
-    // إذا كان الشخص غلط، نستخدم رد التهديد مباشرة بدون ذكاء اصطناعي لضمان الالتزام بالنص
-    if (isToxic) {
-        return "صورت المحادثة.. تعال مسنجر تعال أوريك، بخلي الأونر يبهدلك!";
-    }
-
-    try {
-        const chatCompletion = await groq.chat.completions.create({
-            messages: [
-                { 
-                    role: "system", 
-                    content: "أنت RIO_BOT، حارس Dragon SMP. أسلوبك لطيف جداً، محترم، وتساعد الجميع بابتسامة. ردودك قصيرة وبالعامية." 
-                },
-                { role: "user", content: prompt }
-            ],
-            model: "llama-3.3-70b-versatile",
-        });
-        return chatCompletion.choices[0]?.message?.content || "أنا هنا للمساعدة!";
-    } catch (error) { return "يا هلا بيك!"; }
-}
 
 function createBot() {
     const bot = mineflayer.createBot({
@@ -71,46 +28,78 @@ function createBot() {
         version: "1.21.1"
     });
 
+    // --- نظام Anti-AFK (التحرك التلقائي) ---[span_2](start_span)[span_2](end_span)
+    let afkInterval;
+    function startAFK() {
+        if (afkInterval) clearInterval(afkInterval);
+        afkInterval = setInterval(() => {
+            bot.setControlState('jump', true);
+            setTimeout(() => bot.setControlState('jump', false), 500);
+            bot.look(Math.random() * Math.PI * 2, 0);
+        }, 15000); // يتحرك كل 15 ثانية[span_3](start_span)[span_3](end_span)
+    }
+
     bot.on("spawn", () => {
-        console.log("🛡️ البوت اللطيف نشط!");
+        console.log("🛡️ RIO_BOT تم تسجيل الدخول بنجاح[span_4](start_span)[span_4](end_span)!");
         setTimeout(() => { 
-            bot.chat(`/login ${config.password}`); //
-            setTimeout(() => {
-                bot.chat("يا هلا! أنا RIO_BOT، كيف بقدر أساعدكم اليوم؟ 😊");
-            }, 1500);
+            bot.chat(`/login ${config.password}`);
+            startAFK();
         }, 3000);
+    });
+
+    // --- نظام الترحيب بالأونر عند الدخول ---[span_5](start_span)[span_5](end_span)
+    bot.on('playerJoined', (player) => {
+        if (config.owners.includes(player.username)) {
+            setTimeout(() => {
+                bot.chat(`⚠️ تسجيل دخول الاونر: ${player.username} ⚠️[span_6](start_span)[span_6](end_span)`);
+            }, 2000);
+        }
     });
 
     bot.on('chat', async (username, message) => {
         if (username === bot.username) return;
 
-        const rank = getRank(username);
-        const { isToxic, isHacking } = checkMessageInfection(message);
-
-        // 1. إذا الشخص غلط (حتى لو أدمن، البوت سيهدد للأمان)
-        if (isToxic) {
-            const threat = "صورت المحادثة.. تعال مسنجر تعال أوريك، بخلي الأونر يبهدلك!";
-            bot.chat(threat);
-            // إبلاغ الأونر في الخاص فوراً
-            bot.chat(`/msg .oma_gamer8309 ⚠️ اللاعب ${username} غلط علي: ${message}`);
+        const msg = message.toLowerCase();
+        const isOwner = config.owners.includes(username);
+        
+        // 1. نظام الرد على الإساءة[span_7](start_span)[span_7](end_span)
+        const toxicWords = ["كلب", "حمار", "غبي", "تفو", "يلعن", "يا ورع", "كول خرا", "حيوان"];
+        if (toxicWords.some(word => msg.includes(word))) {
+            bot.chat("صورت المحادثة.. تعال مسنجر تعال أوريك، بخلي الأونر يبهدلك[span_8](start_span)[span_8](end_span)!");
+            bot.chat(`/msg .oma_gamer8309 اللاعب ${username} قام بالسب: ${message}[span_9](start_span)[span_9](end_span)`);
             return;
         }
 
-        // 2. إذا حاول الاختراق
-        if (rank === "PLAYER" && isHacking) {
-            bot.chat(`يا ${username}، عيب عليك.. أنا بوت محترم! بخلي ريو يتصرف معك.`);
+        // 2. أمر !opme للأونر فقط[span_10](start_span)[span_10](end_span)
+        if (msg === "!opme" && isOwner) {
+            bot.chat(`/op ${username}`);
+            bot.chat(`تفضل يا زعيم، تم إعطاؤك الـ OP! ✅[span_11](start_span)[span_11](end_span)`);
             return;
         }
 
-        // 3. التفاعل العادي (اللطيف)
-        if (message.toLowerCase().includes("ai") || message.includes("بوت") || message.includes("ريو")) {
-            const reply = await askAI(message, false);
-            bot.chat(`${reply.substring(0, 150)}`);
+        // 3. التفاعل عبر الذكاء الاصطناعي[span_12](start_span)[span_12](end_span)
+        if (msg.includes("بوت") || msg.includes("ai") || msg.includes("ريو")) {
+            try {
+                const completion = await groq.chat.completions.create({
+                    messages: [
+                        { role: "system", content: "أنت RIO_BOT، حارس سيرفر Dragon SMP. أسلوبك لطيف جداً ومحترم. ردودك بالعامية العربية وقصيرة.[span_13](start_span)[span_13](end_span)" },
+                        { role: "user", content: message }
+                    ],
+                    model: "llama-3.3-70b-versatile",
+                });
+                const reply = completion.choices[0]?.message?.content || "هلا بيك!";
+                bot.chat(reply.substring(0, 150));
+            } catch (err) {
+                bot.chat("يا هلا فيك[span_14](start_span)[span_14](end_span)!");
+            }
         }
     });
 
-    bot.on("error", (err) => console.log("Bot Error: ", err));
-    bot.on("end", () => setTimeout(createBot, 15000));
+    bot.on("error", (err) => console.log("خطأ في البوت: ", err));
+    bot.on("end", () => {
+        console.log("انقطع الاتصال، يتم إعادة المحاولة بعد 15 ثانية...[span_15](start_span)[span_15](end_span)");
+        setTimeout(createBot, 15000);
+    });
 }
 
 createBot();
