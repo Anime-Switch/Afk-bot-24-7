@@ -1,7 +1,7 @@
 const mineflayer = require("mineflayer");
 const Groq = require("groq-sdk");
 const http = require("http");
-const { reshape } = require('arabic-persian-rescaler');
+const arabicReshaper = require('arabic-reshaper'); // المكتبة البديلة المضمونة
 
 const groq = new Groq({ apiKey: process.env.GROQ_KEY });
 
@@ -27,8 +27,14 @@ function createBot() {
         version: "1.21.1"
     });
 
+    // دالة إصلاح اللغة العربية الجديدة (تعالج الحروف المقطعة والمقلوبة)
     function fixArabic(text) {
-        return reshape(text);
+        try {
+            const reshaped = arabicReshaper.reshape(text);
+            return reshaped.split('').reverse().join('');
+        } catch (e) {
+            return text;
+        }
     }
 
     let moveInterval;
@@ -101,7 +107,7 @@ function createBot() {
 
     bot.on("error", (err) => console.log("Error: ", err));
     bot.on("end", () => {
-        clearInterval(moveInterval);
+        if (moveInterval) clearInterval(moveInterval);
         setTimeout(createBot, 15000);
     });
 }
