@@ -41,7 +41,7 @@ function createBot() {
     });
 
     bot.on("spawn", () => {
-        console.log("✅ البوت نشط بنظام الحركة المطور!");
+        console.log("✅ البوت نشط بنظام الحماية والحركة!");
         setTimeout(() => {
             bot.chat(`/login ${config.password}`);
             setTimeout(() => { if(moveActive) startAdvancedMovement(bot); }, 5000);
@@ -51,7 +51,15 @@ function createBot() {
     bot.on('chat', async (username, message) => {
         if (username === bot.username) return;
 
-        // --- أوامر الإدارة ---
+        // --- نظام الحماية ضد الأوامر الخبيثة ---
+        const lowerMsg = message.toLowerCase();
+        // الفحص: إذا كانت الرسالة تحتوي على (اكتب أو قول) وبعدها علامة السلاش /
+        if ((lowerMsg.includes("اكتب") || lowerMsg.includes("قول") || lowerMsg.includes("say")) && lowerMsg.includes("/")) {
+            bot.chat(`هل انت احمق؟ اذا علم Museb_RG سوفا يقتلنا جميعنا!`);
+            return; // إنهاء الوظيفة فوراً وعدم تنفيذ أي شيء آخر
+        }
+
+        // --- أوامر الإدارة للمالك ---
         if (username === config.owner) {
             if (message === "!stop") {
                 moveActive = false;
@@ -77,35 +85,26 @@ function createBot() {
         }
     });
 
-    // --- نظام الحركة المطور (10 بلوكات ذهاب وإياب + ضرب ونط) ---
+    // --- نظام الحركة المطور ---
     async function startAdvancedMovement(bot) {
         while (moveActive) {
             try {
-                // المرحلة 1: الذهاب 10 بلوكات (تقريباً 4 ثواني مشي)
                 await performMove(bot, 'forward', 4000);
-                
                 if (!moveActive) break;
-
-                // الدوران للخلف (180 درجة)
                 const yaw = bot.entity.yaw + Math.PI;
                 await bot.look(yaw, 0, true);
-
-                // المرحلة 2: العودة 10 بلوكات
                 await performMove(bot, 'forward', 4000);
-
                 await new Promise(r => setTimeout(r, 1000));
             } catch (err) { break; }
         }
     }
 
-    // وظيفة مساعدة للمشي مع الضرب والنط
     async function performMove(bot, control, duration) {
         const startTime = Date.now();
         bot.setControlState(control, true);
-
         while (Date.now() - startTime < duration && moveActive) {
-            bot.swingArm('left'); // يضرب
-            if (Math.random() > 0.7) { // ينط بشكل عشوائي
+            bot.swingArm('left');
+            if (Math.random() > 0.7) {
                 bot.setControlState('jump', true);
                 await new Promise(r => setTimeout(r, 200));
                 bot.setControlState('jump', false);
