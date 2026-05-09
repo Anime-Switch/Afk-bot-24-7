@@ -4,6 +4,7 @@
   "main": "bot.js",
   "dependencies": {
     "mineflayer": "^4.20.0",
-    "groq-sdk": "^0.9.0"
+    "groq-sdk": "^0.9.0",
+    "arabic-persian-rescaler": "^1.0.2"
   }
 }
