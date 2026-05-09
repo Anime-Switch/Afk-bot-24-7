@@ -5,8 +5,9 @@ const { reshape } = require('arabic-persian-rescaler');
 
 const groq = new Groq({ apiKey: process.env.GROQ_KEY });
 
+// سيرفر ويب لضمان استمرارية العمل على Railway
 http.createServer((req, res) => {
-    res.write("Dragon SMP: Secure Bot with Advanced Movement Online");
+    res.write("Dragon SMP: Secure Bot Online");
     res.end();
 }).listen(process.env.PORT || 3000);
 
@@ -30,28 +31,25 @@ function createBot() {
         return reshape(text);
     }
 
-    // --- نظام الحركة المتقدم (30 بلوكة + ضرب + قفز) ---
     let moveInterval;
     function startAdvancedMovement() {
         let direction = 'forward';
         let distanceTraveled = 0;
 
         moveInterval = setInterval(() => {
-            // 1. الضرب والقفز المستمر
             bot.swingArm('right');
             bot.setControlState('jump', true);
             setTimeout(() => bot.setControlState('jump', false), 200);
 
-            // 2. التحكم في اتجاه المشي (30 بلوكة)
             bot.setControlState(direction, true);
             distanceTraveled++;
 
-            if (distanceTraveled >= 60) { // تقريباً 30 بلوكة بناءً على سرعة التحديث
+            if (distanceTraveled >= 60) {
                 bot.setControlState(direction, false);
                 direction = (direction === 'forward') ? 'back' : 'forward';
                 distanceTraveled = 0;
             }
-        }, 500); // تحديث الحركة كل نصف ثانية
+        }, 500);
     }
 
     bot.on("spawn", () => {
@@ -59,7 +57,7 @@ function createBot() {
         setTimeout(() => { 
             bot.chat(`/register ${config.password} ${config.password}`);
             bot.chat(`/login ${config.password}`);
-            startAdvancedMovement(); // بدء نظام الحركة والضرب[span_1](start_span)[span_1](end_span)
+            startAdvancedMovement(); 
         }, 3000);
     });
 
@@ -69,14 +67,15 @@ function createBot() {
         const msg = message.toLowerCase();
         const isOwner = config.owners.includes(username);
 
-        // نظام الحماية من الأوامر[span_2](start_span)[span_2](end_span)
+        // نظام الحماية من الأوامر لغير الأونر
         if (msg.includes("/") || msg.includes("gamemode") || msg.includes("kick") || msg.includes("op")) {
             if (!isOwner) {
-                bot.chat(fixArabic(`يا ${username}، هذي الصلاحيات مخصصة للأونر فقط! ✋`));[span_3](start_span)[span_3](end_span)
+                bot.chat(fixArabic(`يا ${username}، هذي الصلاحيات مخصصة للأونر فقط! ✋`));
                 return;
             }
         }
 
+        // تنفيذ الأوامر للأونر فقط
         if (isOwner && message.startsWith("/")) {
             bot.chat(message); 
             return;
