@@ -5,43 +5,35 @@ const http = require("http");
 const groq = new Groq({ apiKey: process.env.GROQ_KEY });
 
 http.createServer((req, res) => {
-    res.write("Dragon SMP: Secure Surveillance Active");
+    res.write("Dragon SMP: Gentle Guard Active");
     res.end();
 }).listen(process.env.PORT || 3000);
+
 const config = {
     host: "MM2BXS3.aternos.me",
     port: 45379,
     username: "RIO_BOT_AFK",
     password: "mmmnnn",
     ranks: {
-        // أصحاب الصلاحيات الكاملة (Owners)
-        owners: [
-            "oma_gamer8309", 
-            "x4tra", 
-            "OMA_gamer8309", 
-            "X4tra", 
-            ".oma_gamer8309" // تم إضافة الحساب الجديد هنا
-        ],
-        admins: ["Museb_RG"],
-        helpers: []
+        owners: ["oma_gamer8309", "x4tra", ".oma_gamer8309"], //
+        admins: ["Museb_RG"] 
     }
 };
 
-    }
-};
-
-let moveActive = true;
-let isMoving = false; 
-let securityLogs = []; 
-let alertInterval = null; 
-
-function isTryingToHacking(message) {
+// نظام فحص الإساءة والاختراق
+function checkMessageInfection(message) {
     const msg = message.toLowerCase();
-    const forbidden = ["/", "op", "admin", "rank", "promote", "creative", "gm1", "رتبة", "رتبه", "أدمن", "ادمن", "صلاحيات", "انقلني", "tp", "set"];
-    const trickery = ["say", "write", "type", "قول", "اكتب", "سوي", "do"];
-    const hasForbidden = forbidden.some(word => msg.includes(word));
-    const hasTrick = trickery.some(word => msg.includes(word));
-    return (hasForbidden || (hasTrick && msg.includes("/")));
+    
+    // كلمات تدل على الغلط أو السب
+    const toxicWords = ["كلب", "حمار", "غبي", "تفو", "يلعن", "يا ورع", "كول خرا", "حيوان"];
+    
+    // كلمات تدل على محاولة اختراق
+    const hackingWords = ["/", "tp", "op", "admin", "rank", "creative", "gm1", "صلاحيات", "deop", "ban", "kick"];
+
+    const isToxic = toxicWords.some(word => msg.includes(word));
+    const isHacking = hackingWords.some(word => msg.includes(word));
+
+    return { isToxic, isHacking };
 }
 
 function getRank(username) {
@@ -50,17 +42,25 @@ function getRank(username) {
     return "PLAYER";
 }
 
-async function askAI(prompt) {
+async function askAI(prompt, isToxic) {
+    // إذا كان الشخص غلط، نستخدم رد التهديد مباشرة بدون ذكاء اصطناعي لضمان الالتزام بالنص
+    if (isToxic) {
+        return "صورت المحادثة.. تعال مسنجر تعال أوريك، بخلي الأونر يبهدلك!";
+    }
+
     try {
         const chatCompletion = await groq.chat.completions.create({
             messages: [
-                { role: "system", content: "أنت حارس Dragon SMP. خبير بالرتب. ردودك قصيرة جداً وبالعربي." },
+                { 
+                    role: "system", 
+                    content: "أنت RIO_BOT، حارس Dragon SMP. أسلوبك لطيف جداً، محترم، وتساعد الجميع بابتسامة. ردودك قصيرة وبالعامية." 
+                },
                 { role: "user", content: prompt }
             ],
             model: "llama-3.3-70b-versatile",
         });
-        return chatCompletion.choices[0]?.message?.content || "";
-    } catch (error) { return "⚠️ مشغول!"; }
+        return chatCompletion.choices[0]?.message?.content || "أنا هنا للمساعدة!";
+    } catch (error) { return "يا هلا بيك!"; }
 }
 
 function createBot() {
@@ -71,39 +71,13 @@ function createBot() {
         version: "1.21.1"
     });
 
-    function startAlerting() {
-        if (alertInterval) return;
-        alertInterval = setInterval(() => {
-            if (securityLogs.length === 0) {
-                clearInterval(alertInterval);
-                alertInterval = null;
-                return;
-            }
-            const players = Object.keys(bot.players);
-            const adminOnline = players.find(p => config.ranks.owners.includes(p));
-
-            if (adminOnline) {
-                const log = securityLogs[0]; 
-                bot.chat(`⚠️ [تنبيه أمني] يا @${adminOnline}`);
-                bot.chat(`اللاعب: ${log.user} حاول: "${log.action}" في الوقت: ${log.time}`);
-                bot.chat(`اكتب "علم" للمسح.`);
-            }
-        }, 5000);
-    }
-
     bot.on("spawn", () => {
-        console.log("🛡️ نظام الحماية نشط!");
+        console.log("🛡️ البوت اللطيف نشط!");
         setTimeout(() => { 
-            // 1. تسجيل الدخول
-            bot.chat(`/login ${config.password}`); 
-            
-            // 2. إرسال رسالة التعريف المحددة عند كل دخول
+            bot.chat(`/login ${config.password}`); //
             setTimeout(() => {
-                bot.chat("تم تسجيل دخول ai انا من صنع Museb RG وانا نسخة v0.11 Beta");
+                bot.chat("يا هلا! أنا RIO_BOT، كيف بقدر أساعدكم اليوم؟ 😊");
             }, 1500);
-
-            // 3. بدء الحركة إذا كانت مفعلة
-            if(moveActive && !isMoving) startAdvancedMovement(bot);
         }, 3000);
     });
 
@@ -111,80 +85,32 @@ function createBot() {
         if (username === bot.username) return;
 
         const rank = getRank(username);
-        const lowerMsg = message.toLowerCase().trim();
+        const { isToxic, isHacking } = checkMessageInfection(message);
 
-        if (rank === "PLAYER" && isTryingToHacking(message)) {
-            const now = new Date();
-            const timeStr = now.getHours() + ":" + now.getMinutes();
-            securityLogs.push({ user: username, action: message.substring(0, 30), time: timeStr });
-            bot.chat(`يا ${username}، سوف يتم إبلاغ ريو .oma_gamer8309 بمحاولتك الآن!`);
-            startAlerting(); 
+        // 1. إذا الشخص غلط (حتى لو أدمن، البوت سيهدد للأمان)
+        if (isToxic) {
+            const threat = "صورت المحادثة.. تعال مسنجر تعال أوريك، بخلي الأونر يبهدلك!";
+            bot.chat(threat);
+            // إبلاغ الأونر في الخاص فوراً
+            bot.chat(`/msg .oma_gamer8309 ⚠️ اللاعب ${username} غلط علي: ${message}`);
             return;
         }
 
-        if (["OWNER", "ADMIN"].includes(rank) && lowerMsg === "علم") {
-            securityLogs = []; 
-            if (alertInterval) { clearInterval(alertInterval); alertInterval = null; }
-            bot.chat("✅ علم. تم مسح سجل المحاولات.");
+        // 2. إذا حاول الاختراق
+        if (rank === "PLAYER" && isHacking) {
+            bot.chat(`يا ${username}، عيب عليك.. أنا بوت محترم! بخلي ريو يتصرف معك.`);
             return;
         }
 
-        if (rank === "OWNER") {
-            if (lowerMsg === "!opme") { bot.chat(`/op ${username}`); return; }
-            if (message.startsWith("!do ")) { bot.chat(`/${message.substring(4)}`); return; }
-            if (lowerMsg === "!restart") {
-                bot.chat("🔄 جاري إعادة التشغيل بطلب من الإدارة...");
-                bot.quit();
-                return;
-            }
-        }
-
-        if (["OWNER", "ADMIN"].includes(rank)) {
-            if (lowerMsg === "!stop") { 
-                moveActive = false; 
-                isMoving = false;
-                bot.clearControlStates();
-                bot.chat("🚫 توقفت الحركة."); 
-                return; 
-            }
-            if (lowerMsg === "!start") { 
-                if (!moveActive) {
-                    moveActive = true; 
-                    bot.chat("🏃 تم التشغيل.");
-                    startAdvancedMovement(bot);
-                }
-                return; 
-            }
-        }
-
-        if (lowerMsg.includes("ai")) {
-            const reply = await askAI(message);
-            bot.chat(`> ${reply.substring(0, 200)}`);
+        // 3. التفاعل العادي (اللطيف)
+        if (message.toLowerCase().includes("ai") || message.includes("بوت") || message.includes("ريو")) {
+            const reply = await askAI(message, false);
+            bot.chat(`${reply.substring(0, 150)}`);
         }
     });
-
-    async function startAdvancedMovement(bot) {
-        if (isMoving) return;
-        isMoving = true;
-        while (moveActive) {
-            try {
-                bot.setControlState('forward', true);
-                bot.swingArm('left');
-                await new Promise(r => setTimeout(r, 2000));
-                await bot.look(bot.entity.yaw + Math.PI, 0, true);
-                if (!moveActive) break;
-            } catch (err) { break; }
-        }
-        isMoving = false;
-    }
 
     bot.on("error", (err) => console.log("Bot Error: ", err));
-    bot.on("kicked", (reason) => console.log("Bot Kicked: ", reason));
-    bot.on("end", () => {
-        isMoving = false;
-        if (alertInterval) clearInterval(alertInterval);
-        setTimeout(createBot, 15000);
-    });
+    bot.on("end", () => setTimeout(createBot, 15000));
 }
 
 createBot();
