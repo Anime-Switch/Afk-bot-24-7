@@ -12,8 +12,8 @@ http.createServer((req, res) => {
 }).listen(process.env.PORT || 3000);
 
 const config = {
-    host: "MM2BXS3.aternos.me",
-    port: 45379,
+    host: "ATOMIC_SMPP.aternos.me",
+    port: 61003,
     username: "RIO_BOT_AFK",
     password: "mmmnnn",
     owners: ["x4tra", ".oma_gamer8309"]
