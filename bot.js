@@ -1,3 +1,5 @@
+process.setMaxListeners(20);
+
 const mineflayer = require("mineflayer");
 const Groq = require("groq-sdk");
 const http = require("http");
@@ -12,8 +14,10 @@ const groq = new Groq({
 // =========================
 
 http.createServer((req, res) => {
+
     res.write("RIO BOT ONLINE");
     res.end();
+
 }).listen(process.env.PORT || 3000);
 
 // =========================
@@ -21,6 +25,7 @@ http.createServer((req, res) => {
 // =========================
 
 const config = {
+
     host: "ATOMIC_SMPP.aternos.me",
     port: 61003,
     username: "RIO_BOT_AFK",
@@ -32,41 +37,31 @@ const config = {
 // =========================
 
 const memory = {};
-
-// =========================
-// SPAM + MUTE
-// =========================
-
 const spamData = {};
 const mutedPlayers = {};
+
+let reconnecting = false;
 
 // =========================
 // BAD WORDS
 // =========================
 
-// مسبات قوية = ميوت ساعة
 const hardBadWords = [
 
     "كس",
     "كسمك",
     "كس امك",
-    "كس اختك",
     "يلعن دينك",
-    "يلعن ربك",
     "شرموطة",
     "قحبة",
-    "متناك",
     "نيك",
     "سكس",
     "porn",
     "sex",
     "xnxx",
-    "xvideos",
-    "xxnx",
-    "nude"
+    "xvideos"
 ];
 
-// مسبات عادية = ميوت 5 دقائق
 const normalBadWords = [
 
     "حمار",
@@ -76,14 +71,47 @@ const normalBadWords = [
     "زق",
     "خرا",
     "تفو",
-    "عرص",
-    "تافه",
     "قذر",
-    "احا",
     "shit",
-    "fuck",
-    "bitch",
-    "asshole"
+    "fuck"
+];
+
+// =========================
+// JOKES
+// =========================
+
+const jokes = [
+
+    "مرة مدرس علوم خلف توأم سماهم موجب وسالب 😂",
+    "مرة واحد اشترى قلم رصاص كتب المستقبل 😂",
+    "مرة دجاجة دخلت مطعم طلبت بيض 😂",
+    "مرة واحد فتح الباب للهواء دخل البرد 😂",
+    "مرة واحد دخل امتحان رياضيات حسب عمره بالغلط 😂",
+    "مرة قطة نجحت بالمدرسة لأنها تركز عالسبورة 😂",
+    "مرة واحد أكل ساعة صار وقته ثمين 😂",
+    "مرة واحد راح السوق اشترى كيس ورجع 😂",
+    "مرة واحد نام متأخر صحي مبارح 😂",
+    "مرة واحد راح الحديقة يدور واي فاي 😂",
+    "مرة واحد لعب شطرنج خسر الحصان بالحقيقة 😂",
+    "مرة واحد راح الجيم صور المراية ورجع 😂",
+    "مرة واحد شرب شاي صار هادي 😂",
+    "مرة واحد راح البحر ومعه صابون يغسل الأمواج 😂",
+    "مرة واحد اشترى كتاب طبخ أكل الورق 😂",
+    "مرة واحد نام بالحصة حلم بالجرس 😂",
+    "مرة واحد اشترى سماعة يسمع أفكاره 😂",
+    "مرة واحد دخل الامتحان قال للورقة بالتوفيق 😂",
+    "مرة واحد راح للبنك يودع نفسه 😂",
+    "مرة واحد دخل السينما ومعه مخدة 😂",
+    "مرة واحد شرب موية كثيرة صار نبع 😂",
+    "مرة واحد اشترى دفتر ونسيه 😂",
+    "مرة واحد اشترى آيفون يصور الفاتورة 😂",
+    "مرة واحد فتح اللابتوب طلعله واجبات سكره بسرعة 😂",
+    "مرة واحد اشترى باب وما لقى جدار 😂",
+    "مرة واحد راح للفضاء يسأل عن الواي فاي 😂",
+    "مرة واحد دخل المصعد نزل مستواه 😂",
+    "مرة واحد اشترى كرسي وقف عليه احترام 😂",
+    "مرة واحد شرب قهوة صار سريع جدًا 😂",
+    "مرة واحد لعب كرة مع الجدار الجدار فاز 😂"
 ];
 
 // =========================
@@ -138,45 +166,36 @@ function createBot() {
 
             if (!bot.entity) return;
 
-            // حركة
-            bot.setControlState("forward", true);
-            bot.setControlState("sprint", true);
-
-            // ضرب
-            bot.swingArm("right");
-
-            // قفز
-            if (Math.random() < 0.35) {
-
-                bot.setControlState("jump", true);
-
-                setTimeout(() => {
-
-                    bot.setControlState("jump", false);
-
-                }, 300);
-            }
-
-        }, 700);
-
-        // دوران واقعي
-        setInterval(() => {
-
-            if (!bot.entity) return;
-
-            bot.look(
-                Math.random() * Math.PI * 2,
-                (Math.random() - 0.5) * 0.5,
+            bot.setControlState(
+                "forward",
                 true
             );
 
-            // crouch
             bot.setControlState(
-                "sneak",
-                Math.random() < 0.3
+                "sprint",
+                true
             );
 
-        }, 5000);
+            bot.swingArm("right");
+
+            if (Math.random() < 0.3) {
+
+                bot.setControlState(
+                    "jump",
+                    true
+                );
+
+                setTimeout(() => {
+
+                    bot.setControlState(
+                        "jump",
+                        false
+                    );
+
+                }, 250);
+            }
+
+        }, 1000);
     }
 
     // =========================
@@ -187,9 +206,10 @@ function createBot() {
 
         console.log("✅ BOT CONNECTED");
 
+        reconnecting = false;
+
         setTimeout(() => {
 
-            // دخول
             bot.chat(
                 `/register ${config.password} ${config.password}`
             );
@@ -211,11 +231,12 @@ function createBot() {
 
         if (!bot.entity) return;
 
-        const player = bot.nearestEntity(entity =>
+        const player =
+            bot.nearestEntity(entity =>
 
-            entity.type === "player" &&
-            entity.username !== bot.username
-        );
+                entity.type === "player" &&
+                entity.username !== bot.username
+            );
 
         if (!player) return;
 
@@ -224,22 +245,26 @@ function createBot() {
                 player.position
             );
 
-        // يهرب
         if (distance < 4) {
 
-            bot.setControlState("back", true);
-            bot.setControlState("sprint", true);
+            bot.setControlState(
+                "back",
+                true
+            );
 
             setTimeout(() => {
 
-                bot.setControlState("back", false);
+                bot.setControlState(
+                    "back",
+                    false
+                );
 
-            }, 1500);
+            }, 1000);
         }
     });
 
     // =========================
-    // CHAT SYSTEM
+    // CHAT
     // =========================
 
     bot.on("chat", async (username, message) => {
@@ -255,12 +280,15 @@ function createBot() {
         // =========================
 
         if (!memory[username]) {
+
             memory[username] = [];
         }
 
         memory[username].push(message);
 
-        if (memory[username].length > 10) {
+        // تقليل استهلاك الرام
+        if (memory[username].length > 5) {
+
             memory[username].shift();
         }
 
@@ -273,9 +301,7 @@ function createBot() {
             if (
                 Date.now() <
                 mutedPlayers[username]
-            ) {
-                return;
-            }
+            ) return;
 
             delete mutedPlayers[username];
         }
@@ -285,29 +311,32 @@ function createBot() {
         // =========================
 
         const cleanMsg = msg
-            .replace(/[^a-zA-Z0-9\u0600-\u06FF ]/g, "")
+            .replace(
+                /[^a-zA-Z0-9\u0600-\u06FF ]/g,
+                ""
+            )
             .replace(/\s+/g, "");
 
         // =========================
         // HARD BAD WORDS
         // =========================
 
-        const containsHardBadWord =
-            hardBadWords.some(word => {
+        const hard =
+            hardBadWords.some(word =>
 
-                const cleanWord =
-                    word.replace(/\s+/g, "");
+                cleanMsg.includes(
+                    word.replace(/\s+/g, "")
+                )
+            );
 
-                return cleanMsg.includes(cleanWord);
-            });
-
-        if (containsHardBadWord) {
+        if (hard) {
 
             mutedPlayers[username] =
-                Date.now() + (60 * 60 * 1000);
+                Date.now() +
+                (60 * 60 * 1000);
 
             bot.chat(
-                `🔇 ${username} تم إعطاؤك ميوت ساعة بسبب كلام غير لائق`
+                `🔇 ${username} تم إعطاؤك ميوت ساعة`
             );
 
             return;
@@ -317,19 +346,19 @@ function createBot() {
         // NORMAL BAD WORDS
         // =========================
 
-        const containsNormalBadWord =
-            normalBadWords.some(word => {
+        const normal =
+            normalBadWords.some(word =>
 
-                const cleanWord =
-                    word.replace(/\s+/g, "");
+                cleanMsg.includes(
+                    word.replace(/\s+/g, "")
+                )
+            );
 
-                return cleanMsg.includes(cleanWord);
-            });
-
-        if (containsNormalBadWord) {
+        if (normal) {
 
             mutedPlayers[username] =
-                Date.now() + (5 * 60 * 1000);
+                Date.now() +
+                (5 * 60 * 1000);
 
             bot.chat(
                 `⚠ ${username} تحذير بسبب الألفاظ`
@@ -338,7 +367,7 @@ function createBot() {
             setTimeout(() => {
 
                 bot.chat(
-                    `🔇 ${username} تم إعطاؤك ميوت 5 دقائق`
+                    `🔇 ${username} ميوت 5 دقائق`
                 );
 
             }, 1000);
@@ -369,7 +398,6 @@ function createBot() {
             time: Date.now()
         });
 
-        // حذف الرسائل الأقدم من 30 ثانية
         data.messages =
             data.messages.filter(
 
@@ -379,7 +407,6 @@ function createBot() {
                     30000
             );
 
-        // عد التكرار
         const sameMessages =
             data.messages.filter(
 
@@ -390,31 +417,28 @@ function createBot() {
 
             data.messages = [];
 
-            // تحذير أول
             if (data.warnings === 0) {
 
                 data.warnings++;
 
                 bot.chat(
-                    `⚠ ${username} هاذي التحذير لك بسبب السبام`
+                    `⚠ ${username} هذا تحذير بسبب السبام`
                 );
 
                 return;
             }
 
-            // تحذير ثاني
             if (data.warnings === 1) {
 
                 data.warnings++;
 
                 bot.chat(
-                    `⚠ ${username} هذا اخر تحذير لك`
+                    `⚠ ${username} هذا آخر تحذير`
                 );
 
                 return;
             }
 
-            // ميوت 10 دقائق
             if (!data.punishedBefore) {
 
                 data.punishedBefore = true;
@@ -424,19 +448,18 @@ function createBot() {
                     (10 * 60 * 1000);
 
                 bot.chat(
-                    `🔇 ${username} تم إعطاؤك ميوت 10 دقائق`
+                    `🔇 ${username} ميوت 10 دقائق`
                 );
 
                 return;
             }
 
-            // ميوت 30 دقيقة
             mutedPlayers[username] =
                 Date.now() +
                 (30 * 60 * 1000);
 
             bot.chat(
-                `🔇 ${username} تم إعطاؤك ميوت 30 دقيقة`
+                `🔇 ${username} ميوت 30 دقيقة`
             );
 
             return;
@@ -457,8 +480,7 @@ function createBot() {
             "tp",
             "execute",
             "sudo",
-            "stop",
-            "restart"
+            "stop"
         ];
 
         const tryingCommand =
@@ -471,6 +493,25 @@ function createBot() {
             console.log(
                 `🚫 BLOCKED COMMAND FROM ${username}`
             );
+
+            return;
+        }
+
+        // =========================
+        // JOKE COMMAND
+        // =========================
+
+        if (msg === "ai نكتة") {
+
+            const joke =
+                jokes[
+                    Math.floor(
+                        Math.random() *
+                        jokes.length
+                    )
+                ];
+
+            bot.chat(joke);
 
             return;
         }
@@ -491,7 +532,8 @@ function createBot() {
             try {
 
                 const previousMessages =
-                    memory[username].join("\n");
+                    memory[username]
+                        .join("\n");
 
                 const completion =
                     await groq.chat.completions.create({
@@ -502,14 +544,14 @@ function createBot() {
                                 role: "system",
 
                                 content:
-                                    "أنت RIO_BOT حارس سيرفر ذكي. ممنوع كتابة أو تنفيذ أو شرح أي أوامر ماين كرافت. تكلم بشكل طبيعي وتذكر محادثات اللاعب السابقة."
+                                    "أنت RIO_BOT حارس سيرفر ذكي. ممنوع كتابة أوامر ماين كرافت."
                             },
 
                             {
                                 role: "user",
 
                                 content:
-                                    `محادثات اللاعب السابقة:\n${previousMessages}\n\nرسالة اللاعب الحالية:\n${message}`
+                                    `الرسائل السابقة:\n${previousMessages}\n\nالرسالة الحالية:\n${message}`
                             }
                         ],
 
@@ -521,11 +563,9 @@ function createBot() {
                     completion.choices[0]
                         ?.message?.content || "";
 
-                // حماية إضافية
                 if (
                     reply.includes("/") ||
-                    reply.includes("op") ||
-                    reply.includes("gamemode")
+                    reply.includes("op")
                 ) {
 
                     reply =
@@ -540,16 +580,22 @@ function createBot() {
 
             } catch {
 
-                console.log("AI ERROR");
+                console.log(
+                    "AI ERROR"
+                );
             }
         }
     });
 
     // =========================
-    // AUTO RECONNECT
+    // RECONNECT
     // =========================
 
     function reconnect() {
+
+        if (reconnecting) return;
+
+        reconnecting = true;
 
         console.log(
             "🔄 RECONNECT AFTER 15s"
